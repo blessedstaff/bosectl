@@ -197,6 +197,32 @@ inline DeviceConfig ultra_open() {
     return c;
 }
 
+/// Bose Noise Cancelling Headphones 700 — codename goodyear.
+/// Verified on firmware 1.8.2. No AudioModes block 31: noise control is the
+/// direct CNC [1.5] SETGET, which the firmware applies but never answers.
+inline DeviceConfig nc700() {
+    DeviceConfig c;
+    c.info = {"Bose Noise Cancelling Headphones 700", "goodyear", "unknown"};
+    c.rfcomm_channel = 8;
+    c.init_packet = Addr{0, 1};
+    c.battery = Addr{2, 2};
+    c.firmware = Addr{0, 5};
+    c.product_name = Addr{1, 2};
+    c.voice_prompts = Addr{1, 3};
+    c.cnc = Addr{1, 5};
+    c.eq = Addr{1, 7};
+    c.buttons = Addr{1, 9};
+    c.multipoint = Addr{1, 10};
+    c.sidetone = Addr{1, 11};
+    c.pairing = Addr{4, 8};
+    c.source = Addr{5, 1};
+    c.power = Addr{7, 4};
+    c.supports_anc_toggle = false;
+    c.cnc_direct_setget = true;
+    c.cnc_silent_setget = true;
+    return c;
+}
+
 inline std::optional<DeviceConfig> get_device(const std::string& name) {
     if (name == "qc_ultra2") return qc_ultra2();
     if (name == "qc_ultra2_earbuds") return qc_ultra2_earbuds();
@@ -205,6 +231,7 @@ inline std::optional<DeviceConfig> get_device(const std::string& name) {
     if (name == "qc_earbuds") return qc_earbuds();
     if (name == "qc45") return qc45();
     if (name == "ultra_open") return ultra_open();
+    if (name == "nc700") return nc700();
     return std::nullopt;
 }
 

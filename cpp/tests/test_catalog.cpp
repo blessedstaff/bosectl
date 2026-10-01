@@ -63,7 +63,8 @@ TEST(catalog_is_supported) {
     ASSERT_TRUE(is_supported(0x4039));  // duran
     ASSERT_TRUE(is_supported(0x4068));  // serena
     ASSERT_TRUE(is_supported(0x4020));
-    ASSERT_FALSE(is_supported(0x4024));  // NCH 700, no config
+    ASSERT_TRUE(is_supported(0x4024));   // goodyear (NCH 700)
+    ASSERT_FALSE(is_supported(0x4066));  // lonestarr, no config
     ASSERT_FALSE(is_supported(0xFFFF));
 }
 

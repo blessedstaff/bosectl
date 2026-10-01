@@ -57,6 +57,35 @@ static std::unique_ptr<BmapConnection> mock_qc_ultra2() {
 
 TEST(battery) { ASSERT_EQ(mock_qc_ultra2()->battery(), 80); }
 
+// NC700 CNC: SETGET is applied but never answered.
+class SilentSetgetTransport : public MockTransport {
+public:
+    std::vector<uint8_t> send_recv(const std::vector<uint8_t>& packet) override {
+        if ((packet[2] & 0x0F) == 0x02) {
+            sent.push_back(packet);
+            throw timeout_error("No response");
+        }
+        return MockTransport::send_recv(packet);
+    }
+};
+
+TEST(nc700_set_cnc_confirms_silent_setget_with_get) {
+    auto raw = new SilentSetgetTransport();
+    raw->add(1, 5, 0x03, {0x0b, 0x05, 0x01});
+    BmapConnection dev(std::unique_ptr<Transport>(raw), nc700());
+    dev.set_cnc(5);
+    ASSERT_TRUE((raw->sent[raw->sent.size() - 2] == std::vector<uint8_t>{1, 5, 0x02, 2, 5, 1}));
+    ASSERT_TRUE((raw->sent.back() == std::vector<uint8_t>{1, 5, 0x01, 0}));
+}
+
+TEST(unflagged_setget_timeout_still_raises) {
+    BmapConnection dev(std::unique_ptr<Transport>(new SilentSetgetTransport()), nc700());
+    bool threw = false;
+    try { dev.set_sidetone("low"); }
+    catch (const timeout_error&) { threw = true; }
+    ASSERT_TRUE(threw);
+}
+
 TEST(battery_empty_response) {
     auto raw = new MockTransport();
     raw->add(2, 2, 0x03, {});

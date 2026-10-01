@@ -427,7 +427,15 @@ impl<T: Transport> BmapConnection<T> {
         }
         if self.config.cnc_direct_setget {
             let addr = self.addr(self.config.cnc)?;
-            self.setget(addr, &[level, 1])?;
+            match self.setget(addr, &[level, 1]) {
+                // NC700 applies the write but never answers it.
+                Err(BmapError::Timeout(_)) if self.config.cnc_silent_setget => {
+                    self.get(addr)?;
+                }
+                result => {
+                    result?;
+                }
+            }
             return Ok(());
         }
         self.update_audio_settings(Some(level), None, None, None)
@@ -779,6 +787,40 @@ mod tests {
         t.add(31, 3, 0x03, &[0x00]);                           // current mode: quiet
         t.add(1, 9, 0x03, &[0x80,0x09,0x0e,0x00,0x09,0x40,0x02]); // buttons
         BmapConnection::new(t, devices::qc_ultra2())
+    }
+
+    /// NC700 CNC: SETGET is applied but never answered.
+    struct SilentSetgetTransport(MockTransport);
+
+    impl Transport for SilentSetgetTransport {
+        fn send_recv(&self, packet: &[u8]) -> BmapResult<Vec<u8>> {
+            if packet[2] & 0x0F == 0x02 {
+                self.0.sent.borrow_mut().push(packet.to_vec());
+                return Err(BmapError::Timeout("No response".into()));
+            }
+            self.0.send_recv(packet)
+        }
+
+        fn send_recv_drain(&self, packet: &[u8]) -> BmapResult<Vec<u8>> {
+            self.send_recv(packet)
+        }
+    }
+
+    #[test]
+    fn test_nc700_set_cnc_confirms_silent_setget_with_get() {
+        let mut t = MockTransport::new();
+        t.add(1, 5, 0x03, &[0x0b, 0x05, 0x01]);
+        let dev = BmapConnection::new(SilentSetgetTransport(t), devices::nc700());
+        dev.set_cnc(5).unwrap();
+        let sent = dev.transport.0.sent.borrow();
+        assert_eq!(sent[sent.len() - 2], vec![1, 5, 0x02, 2, 5, 1]);
+        assert_eq!(sent[sent.len() - 1], vec![1, 5, 0x01, 0]);
+    }
+
+    #[test]
+    fn test_unflagged_setget_timeout_still_raises() {
+        let dev = BmapConnection::new(SilentSetgetTransport(MockTransport::new()), devices::nc700());
+        assert!(matches!(dev.set_sidetone("low"), Err(BmapError::Timeout(_))));
     }
 
     #[test]

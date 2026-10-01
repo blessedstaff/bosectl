@@ -361,8 +361,8 @@ Each catalog entry carries:
 lookup_device(0x4082)    → BoseDevice{wolverine, "QuietComfort Ultra Headphones (2nd Gen)", config="qc_ultra2"}
 lookup_device(0x4062)    → BoseDevice{edith, "QuietComfort Ultra Earbuds (2nd Gen)", config="qc_ultra2_earbuds"}
 lookup_device(0x4075)    → BoseDevice{prince, "QuietComfort Headphones", config="qc_prince"}
-is_supported(0x4024)     → False (NCH 700: recognized, no config yet)
-supported_devices()      → [wolfcastle, baywolf, duran, prince, wolverine, lando, edith, serena]
+is_supported(0x4066)     → False (QC Ultra Headphones: recognized, no config yet)
+supported_devices()      → [wolfcastle, baywolf, goodyear, duran, prince, wolverine, lando, edith, serena]
 known_devices()          → full catalog
 usb_ids(0x4082)          → (0x05A7, 0x4082)
 modalias(0x4082)         → "bluetooth:v05A7p4082d0000"
@@ -385,6 +385,7 @@ a default config since they don't have a tested implementation yet.
 |-----|----------|---------|--------|
 | `0x400C` | wolfcastle | QuietComfort 35 | `qc35` |
 | `0x4020` | baywolf | QuietComfort 35 II | `qc35` |
+| `0x4024` | goodyear | Noise Cancelling Headphones 700 | `nc700` |
 | `0x4062` | edith | QuietComfort Ultra Earbuds (2nd Gen) | `qc_ultra2_earbuds` |
 | `0x4075` | prince | QuietComfort Headphones | `qc_prince` |
 | `0x402F` | lando | QuietComfort Earbuds | `qc_earbuds` |
@@ -446,6 +447,7 @@ pybmap/
     ├── qc45.py          # QC45 config
     ├── qc_earbuds.py    # QuietComfort Earbuds config
     ├── ultra_open.py    # Ultra Open Earbuds partial config
+    ├── nc700.py         # Noise Cancelling Headphones 700 config
     └── qc35.py          # QC35 config (module-level constants)
 ```
 
@@ -574,7 +576,8 @@ Tests use a `MockTransport` subclass.
 **Error handling** uses standard exceptions plus typed ones from
 `errors.h`, all derived from `std::runtime_error`: `bmap::device_error`
 (device ERROR reply, with `code()`, or an invalid/empty reply to GET, SETGET
-or START), `bmap::desync_error` (no frame in the reply came from the
+or START), `bmap::timeout_error` (no reply within the receive timeout),
+`bmap::desync_error` (no frame in the reply came from the
 requested `[fblock.func]`), `bmap::unsupported_error` (feature missing on
 this device), `bmap::connect_error` (socket connect failed, with
 `error_number()` = errno) and its subclass `bmap::busy_error` (channel still

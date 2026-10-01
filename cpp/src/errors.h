@@ -29,6 +29,13 @@ public:
     using std::runtime_error::runtime_error;
 };
 
+/// The device sent no reply within the receive timeout. Mirrors
+/// BmapTimeoutError (Python) and BmapError::Timeout (Rust).
+class timeout_error : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
 /// A response carried a different address than the request.
 ///
 /// Seen after the headset drops and reconnects: responses queued before the

@@ -93,7 +93,7 @@ std::vector<uint8_t> RfcommTransport::send_recv_inner(const std::vector<uint8_t>
     uint8_t buf[4096];
     ssize_t n = ::recv(fd_, buf, sizeof(buf), 0);
     if (n <= 0) {
-        throw std::runtime_error(std::string("No response: ") + strerror(errno));
+        throw timeout_error(std::string("No response: ") + strerror(errno));
     }
     std::vector<uint8_t> data(buf, buf + n);
 

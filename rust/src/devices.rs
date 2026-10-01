@@ -51,6 +51,7 @@ pub fn qc_ultra2() -> DeviceConfig {
         build_mode_config: Some(build_mode_config_40),
         supports_anc_toggle: true,
         cnc_direct_setget: false,
+        cnc_silent_setget: false,
     }
 }
 
@@ -114,6 +115,7 @@ pub fn qc_prince() -> DeviceConfig {
         build_mode_config: Some(build_mode_config_39),
         supports_anc_toggle: false,
         cnc_direct_setget: false,
+        cnc_silent_setget: false,
     }
 }
 
@@ -164,6 +166,7 @@ pub fn qc35() -> DeviceConfig {
         build_mode_config: None,
         supports_anc_toggle: false,
         cnc_direct_setget: false,
+        cnc_silent_setget: false,
     }
 }
 
@@ -213,6 +216,7 @@ pub fn qc_earbuds() -> DeviceConfig {
         build_mode_config: None,
         supports_anc_toggle: false,
         cnc_direct_setget: true,
+        cnc_silent_setget: false,
     }
 }
 
@@ -261,6 +265,7 @@ pub fn qc45() -> DeviceConfig {
         build_mode_config: Some(build_mode_config_39),
         supports_anc_toggle: false,
         cnc_direct_setget: false,
+        cnc_silent_setget: false,
     }
 }
 
@@ -307,6 +312,53 @@ pub fn ultra_open() -> DeviceConfig {
         build_mode_config: None,
         supports_anc_toggle: false,
         cnc_direct_setget: false,
+        cnc_silent_setget: false,
+    }
+}
+
+/// Bose Noise Cancelling Headphones 700 — codename goodyear.
+/// Verified on firmware 1.8.2. No AudioModes block 31: noise control is the
+/// direct CNC [1.5] SETGET, which the firmware applies but never answers.
+pub fn nc700() -> DeviceConfig {
+    DeviceConfig {
+        info: DeviceInfo {
+            name: "Bose Noise Cancelling Headphones 700",
+            codename: "goodyear",
+            platform: "unknown",
+        },
+        rfcomm_channel: 8,
+        init_packet: Some(Addr(0, 1)),
+        battery: Some(Addr(2, 2)),
+        battery_components: &[],
+        battery_aggregate_id: None,
+        battery_aggregate_sources: &[],
+        firmware: Some(Addr(0, 5)),
+        product_name: Some(Addr(1, 2)),
+        voice_prompts: Some(Addr(1, 3)),
+        cnc: Some(Addr(1, 5)),
+        eq: Some(Addr(1, 7)),
+        buttons: Some(Addr(1, 9)),
+        multipoint: Some(Addr(1, 10)),
+        sidetone: Some(Addr(1, 11)),
+        auto_pause: None,
+        auto_answer: None,
+        anr: None,
+        pairing: Some(Addr(4, 8)),
+        routing: None,
+        source: Some(Addr(5, 1)),
+        power: Some(Addr(7, 4)),
+        get_all_modes: None,
+        current_mode: None,
+        mode_config: None,
+        favorites: None,
+        audio_settings: None,
+        preset_modes: &[],
+        editable_slots: &[],
+        parse_mode_config: None,
+        build_mode_config: None,
+        supports_anc_toggle: false,
+        cnc_direct_setget: true,
+        cnc_silent_setget: true,
     }
 }
 
@@ -319,6 +371,7 @@ pub fn get_device(name: &str) -> Option<DeviceConfig> {
         "qc_earbuds" => Some(qc_earbuds()),
         "qc45" => Some(qc45()),
         "ultra_open" => Some(ultra_open()),
+        "nc700" => Some(nc700()),
         _ => None,
     }
 }
@@ -351,6 +404,17 @@ mod tests {
     }
 
     #[test]
+    fn test_nc700_direct_silent_cnc_no_modes() {
+        let dev = nc700();
+        assert_eq!(dev.info.codename, "goodyear");
+        assert_eq!(dev.rfcomm_channel, 8);
+        assert!(matches!(dev.init_packet, Some(Addr(0, 1))));
+        assert!(dev.cnc_direct_setget && dev.cnc_silent_setget);
+        assert!(dev.current_mode.is_none() && dev.mode_config.is_none());
+        assert!(dev.preset_modes.is_empty());
+    }
+
+    #[test]
     fn test_qc35_no_eq() {
         let dev = qc35();
         assert!(dev.eq.is_none());
@@ -367,6 +431,7 @@ mod tests {
         assert!(get_device("qc_earbuds").is_some());
         assert!(get_device("qc45").is_some());
         assert!(get_device("ultra_open").is_some());
+        assert!(get_device("nc700").is_some());
         assert!(get_device("nonexistent").is_none());
     }
 

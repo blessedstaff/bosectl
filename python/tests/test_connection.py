@@ -10,6 +10,7 @@ from pybmap.constants import OP_GET, OP_SETGET, OP_STATUS, OP_RESULT, OP_ERROR
 from pybmap.errors import (
     BmapError, BmapAuthError, BmapDeviceError,
     BmapDesyncError, BmapConnectionError, BmapInvalidArgError,
+    BmapTimeoutError,
 )
 from pybmap.devices import qc_ultra2, qc_ultra2_earbuds, qc_prince, qc45
 from pybmap.types import ModeConfig
@@ -399,6 +400,33 @@ class TestQcEarbudsConnection:
         dev = BmapConnection(transport, qc_earbuds)
         dev.set_cnc(4)
         assert transport.sent[-1] == bytes([1, 5, OP_SETGET, 2, 4, 1])
+
+
+class SilentSetgetTransport(MockTransport):
+    """NC700 CNC: SETGET is applied but never answered."""
+
+    def send_recv(self, packet, drain=False):
+        if packet[2] & 0x0F == OP_SETGET:
+            self.sent.append(packet)
+            raise BmapTimeoutError("No response from device")
+        return super().send_recv(packet, drain)
+
+
+class TestNc700Connection:
+    def test_set_cnc_confirms_silent_setget_with_get(self):
+        from pybmap.devices import nc700
+        transport = SilentSetgetTransport()
+        transport.add_response(1, 5, OP_STATUS, bytes([0x0b, 0x05, 0x01]))
+        dev = BmapConnection(transport, nc700)
+        dev.set_cnc(5)
+        assert transport.sent[-2] == bytes([1, 5, OP_SETGET, 2, 5, 1])
+        assert transport.sent[-1] == bytes([1, 5, OP_GET, 0])
+
+    def test_unflagged_setget_timeout_still_raises(self):
+        from pybmap.devices import nc700
+        dev = BmapConnection(SilentSetgetTransport(), nc700)
+        with pytest.raises(BmapTimeoutError):
+            dev.set_sidetone("low")
 
 
 class TestUltraOpenConnection:

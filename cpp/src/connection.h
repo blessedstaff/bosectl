@@ -192,7 +192,14 @@ public:
     void set_cnc(uint8_t level) {
         if (level > 10) throw std::runtime_error("CNC level must be 0-10");
         if (config_.cnc_direct_setget) {
-            setget(require(config_.cnc, "cnc"), {level, 1});
+            Addr addr = require(config_.cnc, "cnc");
+            try {
+                setget(addr, {level, 1});
+            } catch (const timeout_error&) {
+                // NC700 applies the write but never answers it.
+                if (!config_.cnc_silent_setget) throw;
+                get(addr);
+            }
             return;
         }
         update_audio_settings(level, 255, 255, 255);

@@ -148,6 +148,9 @@ pub struct DeviceConfig {
     /// CNC is written with SETGET [1.5] payload [level, 1] (QC Earbuds);
     /// AudioSettings [31.10] and ModeConfig [31.6] writes are unavailable.
     pub cnc_direct_setget: bool,
+    /// The direct CNC SETGET is applied but never answered (NC700); a reply
+    /// timeout is confirmed with a GET instead of failing.
+    pub cnc_silent_setget: bool,
 }
 
 // ── Shared Parsers ──────────────────────────────────────────────────────────

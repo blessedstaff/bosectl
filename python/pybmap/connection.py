@@ -19,7 +19,7 @@ from .constants import (
 from .protocol import bmap_packet, parse_all_responses, fmt_response
 from .errors import (
     BmapError, BmapAuthError, BmapDeviceError, BmapDesyncError,
-    BmapInvalidArgError,
+    BmapInvalidArgError, BmapTimeoutError,
 )
 from .types import AudioSettings, BatteryStatus, DeviceStatus
 from .devices import parsers
@@ -117,9 +117,16 @@ class BmapConnection:
         """Send a SETGET request and return the parsed response."""
         feat = self._feature(feature_name)
         fblock, func = feat["addr"]
-        resp = self._transport.send_recv(
-            bmap_packet(fblock, func, OP_SETGET, payload)
-        )
+        try:
+            resp = self._transport.send_recv(
+                bmap_packet(fblock, func, OP_SETGET, payload)
+            )
+        except BmapTimeoutError:
+            # Some firmware (NC700 CNC [1.5]) applies the write but never
+            # answers it; read the value back so the caller still gets a reply.
+            if not feat.get("silent_setget"):
+                raise
+            resp = self._transport.send_recv(bmap_packet(fblock, func, OP_GET))
         return self._check_reply(resp, fblock, func)
 
     def _start(self, feature_name, payload=b""):
