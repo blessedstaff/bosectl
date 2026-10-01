@@ -9,7 +9,12 @@ Key differences from the newer headphones:
     mode presets or profiles; noise control is the direct CNC level [1.5].
   - CNC [1.5] SETGET [level, 1] is applied (the headset announces it) but
     the firmware never replies, so the write is confirmed with a GET.
-    A 1-byte payload is rejected with ERROR Length (01).
+    Watched for 15 s with no frame arriving, while rejected writes on the
+    same address (1- or 3-byte payload: ERROR Length; SET: ERROR
+    OpNotSupp) answer within 50 ms.
+  - GET [1.5] replies [max+1, level, flag]. SETGET [0, 0] left the level
+    at 5 and cleared the flag, so the second write byte looks like an
+    enable flag rather than part of the level.
   - The headset announces the level on the Bose app's scale, which runs the
     opposite way: wire 0 is announced "10" (max ANC), wire 5 as "5".
   - No ANR [1.6], no auto-pause [1.24], no auto-answer [1.27], no
